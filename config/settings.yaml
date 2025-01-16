@@ -1,0 +1,24 @@
+# settings.yaml
+
+bot:
+  token: "YOUR_TELEGRAM_BOT_TOKEN"
+  chat_id: "YOUR_CHAT_ID"
+
+trading:
+  slippage_tolerance: 0.5
+  default_order_type: "market"
+
+portfolio:
+  update_interval: 60  # in seconds
+
+alerts:
+  price_alerts:
+    enabled: true
+    threshold: 0.1  # percentage change
+
+logging:
+  level: "INFO"
+  file: "logs/bot.log"
+
+database:
+  uri: "postgresql://user:password@localhost:5432/memecoin_bot"
