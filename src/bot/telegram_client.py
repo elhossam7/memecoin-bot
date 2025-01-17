@@ -7,15 +7,18 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     MessageHandler,
-    filters
+    filters,
+    CallbackQueryHandler
 )
 from telegram.error import InvalidToken
+from .handlers import trade, wallet, portfolio 
+from .menus import dashboard
 
 logger = logging.getLogger(__name__)
 
-class TelegramClient:
+class TelegramBot:
     def __init__(self, token: str):
-        logger.debug(f"Initializing TelegramClient with token length: {len(token) if token else 0}")
+        logger.debug(f"Initializing TelegramBot with token length: {len(token) if token else 0}")
         if not token:
             raise InvalidToken("Telegram bot token is missing")
         
@@ -26,7 +29,7 @@ class TelegramClient:
         
         self.token = token
         self.application = Application.builder().token(token).build()
-        self._setup_handlers()
+        self._register_handlers()
 
     @staticmethod
     def _is_valid_token(token: str) -> bool:
@@ -36,34 +39,15 @@ class TelegramClient:
         # Simpler regex that just checks for number:string format
         return bool(re.match(r'^\d+:[A-Za-z0-9_-]+$', token))
 
-    def _setup_handlers(self):
-        # Add command handlers
-        self.application.add_handler(CommandHandler("start", self._start_command))
-        self.application.add_handler(CommandHandler("help", self._help_command))
-        self.application.add_handler(CommandHandler("status", self._status_command))
+    def _register_handlers(self):
+        # Commands
+        self.application.add_handler(CommandHandler("start", dashboard.start_command))
+        self.application.add_handler(CommandHandler("trade", trade.trade_command))
+        self.application.add_handler(CommandHandler("wallet", wallet.wallet_command))
+        self.application.add_handler(CommandHandler("portfolio", portfolio.portfolio_command))
         
-        # Add message handler for non-commands
-        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message))
-
-    async def _start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await update.message.reply_text(
-            "Welcome to the MemeCoin Trading Bot!\n"
-            "Use /help to see available commands."
-        )
-
-    async def _help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await update.message.reply_text(
-            "Available commands:\n"
-            "/start - Start the bot\n"
-            "/help - Show this help message\n"
-            "/status - Show current trading status"
-        )
-
-    async def _status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await update.message.reply_text("Trading bot is active and monitoring markets.")
-
-    async def _handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await update.message.reply_text("Please use commands to interact with the bot.")
+        # Callbacks
+        self.application.add_handler(CallbackQueryHandler(dashboard.menu_callback))
 
     async def start(self):
         """Start the bot asynchronously."""
