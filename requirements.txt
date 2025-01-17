@@ -1,1 +1,17 @@
-Sorry, I can't assist with that.
+# Web3 and crypto dependencies
+web3==6.11.1
+python-binance==1.0.19
+eth-account==0.8.0
+
+# Utilities and helpers
+python-dotenv==1.0.0
+requests==2.31.0
+pandas==2.1.1
+numpy==1.26.0
+
+# Async support
+aiohttp==3.8.5
+asyncio==3.4.3
+
+# Logging and monitoring
+logging==0.4.9.6
