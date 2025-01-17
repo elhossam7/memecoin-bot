@@ -1,10 +1,24 @@
 def check_trending_coins(api_client):
     """
     Check for trending MemeCoins based on social media activity.
+    Returns a list of trending coins with their price and social metrics.
     """
-    # Placeholder for the logic to fetch trending MemeCoins
-    trending_coins = api_client.get_trending_coins()
-    return trending_coins
+    try:
+        trending_coins = api_client.get_trending_coins()
+        if not trending_coins:
+            return []
+        
+        # Filter and sort by social activity
+        trending_coins = [
+            coin for coin in trending_coins 
+            if coin.get('social_score', 0) > 0
+        ]
+        trending_coins.sort(key=lambda x: x.get('social_score', 0), reverse=True)
+        
+        return trending_coins[:10]  # Return top 10 trending coins
+    except Exception as e:
+        print(f"Error fetching trending coins: {e}")
+        return []
 
 def notify_users(trending_coins, notification_service):
     """

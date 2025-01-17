@@ -23,11 +23,10 @@ def notify_user(user_id, message):
     # Implementation for sending a message to the user via Telegram API
     try:
         # You would need to initialize your bot with a token first
-        bot = telegram.Bot(token='YOUR_BOT_TOKEN')
+        bot = telegram.Bot(token=os.getenv('TELEGRAM_BOT_TOKEN'))
         bot.send_message(chat_id=user_id, text=message)
     except telegram.error.TelegramError as e:
         logging.error(f"Failed to send Telegram message: {e}")
-    pass
 
 
 def set_price_alert(user_id, target_price):

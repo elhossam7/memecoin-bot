@@ -26,8 +26,6 @@ def track_portfolio(transactions):
         portfolio[coin]['total_amount'] += amount
         portfolio[coin]['total_investment'] += amount * price
         portfolio[coin]['transactions'].append(transaction)
-    
-    # Here you would typically fetch current prices from an API to calculate current value
     # For demonstration, let's assume we have a function get_current_price(coin) that does this
     for coin in portfolio:
         current_price = get_current_price(coin)  # Placeholder for actual price fetching logic
@@ -45,5 +43,16 @@ def get_current_price(coin):
     Returns:
         float: The current price of the coin.
     """
-    # This function should interact with a price API to get the current price
+    try:
+        # Using requests to fetch price from CoinGecko API
+        url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin.lower()}&vs_currencies=usd"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            if coin.lower() in data:
+                return data[coin.lower()]['usd']
+        return 0.0  # Return 0 if price not found
+    except Exception as e:
+        print(f"Error fetching price for {coin}: {e}")
+        return 0.0
     return 0.0  # Placeholder return value
