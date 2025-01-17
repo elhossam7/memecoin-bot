@@ -180,3 +180,18 @@ def main():
     except Exception as e:
         logger.error(f"Main loop error: {e}")
     pass
+
+class Arbitrage:
+    def __init__(self):
+        self.opportunities = []
+    
+    def find_opportunities(self):
+        # TODO: Implement arbitrage opportunity detection
+        pass
+    
+    def execute_trade(self):
+        # TODO: Implement trade execution
+        pass
+
+# Ensure the class is importable
+__all__ = ['Arbitrage']

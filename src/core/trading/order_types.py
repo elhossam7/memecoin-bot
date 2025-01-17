@@ -1,3 +1,15 @@
+from enum import Enum
+
+class OrderTypes(Enum):
+    MARKET = "market"
+    LIMIT = "limit"
+    STOP_LOSS = "stop_loss"
+    TAKE_PROFIT = "take_profit"
+    FLASH_LOAN = "flash_loan"
+    ARBITRAGE = "arbitrage"
+
+__all__ = ['OrderTypes']
+
 class OrderType:
     def __init__(self, order_type, price=None, quantity=None):
         self.order_type = order_type
