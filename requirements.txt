@@ -4,11 +4,11 @@ python-binance==1.0.19
 eth-account==0.8.0
 
 # Utilities and helpers
-python-dotenv==1.0.0
-requests==2.31.0
-pandas==2.1.1
-numpy==1.26.0
+python-dotenv==1.0.1
+requests==2.32.3
+pandas==2.2.2
+numpy==1.26.4
 
 # Async support
-aiohttp==3.8.5
+aiohttp==3.11.10
 asyncio==3.4.3
