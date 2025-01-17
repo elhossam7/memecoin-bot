@@ -21,6 +21,12 @@ def notify_user(user_id, message):
     - message (str): The message to be sent to the user.
     """
     # Implementation for sending a message to the user via Telegram API
+    try:
+        # You would need to initialize your bot with a token first
+        bot = telegram.Bot(token='YOUR_BOT_TOKEN')
+        bot.send_message(chat_id=user_id, text=message)
+    except telegram.error.TelegramError as e:
+        logging.error(f"Failed to send Telegram message: {e}")
     pass
 
 
@@ -33,6 +39,13 @@ def set_price_alert(user_id, target_price):
     - target_price (float): The target price for the alert.
     """
     # Store the user's alert settings in a database or in-memory structure
+    # Create an in-memory dictionary to store alerts if not exists
+    if not hasattr(set_price_alert, 'alerts'):
+        set_price_alert.alerts = {}
+
+    # Store the alert
+    set_price_alert.alerts[user_id] = target_price
+    logging.info(f"Price alert set for user {user_id} at {target_price}")
     pass
 
 

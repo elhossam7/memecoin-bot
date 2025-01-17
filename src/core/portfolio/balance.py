@@ -13,12 +13,19 @@ def get_balance(wallet_address, blockchain):
     balances = {}
     
     # Implement logic to connect to the respective blockchain and fetch balances
-    # Example:
-    # if blockchain == 'ethereum':
-    #     balances = fetch_ethereum_balances(wallet_address)
-    # elif blockchain == 'solana':
-    #     balances = fetch_solana_balances(wallet_address)
-    
+    if blockchain.lower() == 'ethereum':
+        # Connect to Ethereum node using Web3
+        w3 = Web3(Web3.HTTPProvider('your_ethereum_node_url'))
+        erc20_contract = w3.eth.contract(address='token_contract_address', abi=token_abi)
+        balances['eth'] = w3.eth.get_balance(wallet_address)
+        balances['token'] = erc20_contract.functions.balanceOf(wallet_address).call()
+    elif blockchain.lower() == 'solana':
+        # Connect to Solana network
+        client = Client("https://api.mainnet-beta.solana.com")
+        account_info = client.get_account_info(PublicKey(wallet_address))
+        balances['sol'] = account_info['lamports'] / 10**9
+    else:
+        raise ValueError(f"Unsupported blockchain: {blockchain}")
     return balances
 
 
@@ -39,10 +46,38 @@ def update_balance(wallet_address, blockchain, amount, action):
     success = False
     
     # Implement logic to update the balance based on the action
-    # Example:
-    # if action == 'add':
-    #     success = add_to_balance(wallet_address, blockchain, amount)
-    # elif action == 'subtract':
-    #     success = subtract_from_balance(wallet_address, blockchain, amount)
-    
+    try:
+        if blockchain.lower() == 'ethereum':
+            w3 = Web3(Web3.HTTPProvider('your_ethereum_node_url'))
+            erc20_contract = w3.eth.contract(address='token_contract_address', abi=token_abi)
+            
+            if action.lower() == 'add':
+                tx_hash = erc20_contract.functions.transfer(wallet_address, amount).transact()
+                success = w3.eth.wait_for_transaction_receipt(tx_hash)['status'] == 1
+            elif action.lower() == 'subtract':
+                tx_hash = erc20_contract.functions.transferFrom(wallet_address, 'destination_address', amount).transact()
+                success = w3.eth.wait_for_transaction_receipt(tx_hash)['status'] == 1
+            else:
+                raise ValueError(f"Invalid action: {action}")
+                
+        elif blockchain.lower() == 'solana':
+            client = Client("https://api.mainnet-beta.solana.com")
+            instruction = None
+            
+            if action.lower() == 'add':
+                instruction = TransferParams(to_pubkey=PublicKey(wallet_address), lamports=int(amount * 10**9))
+            elif action.lower() == 'subtract':
+                instruction = TransferParams(from_pubkey=PublicKey(wallet_address), lamports=int(amount * 10**9))
+            else:
+                raise ValueError(f"Invalid action: {action}")
+                
+            tx = Transaction().add(transfer(instruction))
+            success = client.send_transaction(tx) is not None
+        else:
+            raise ValueError(f"Unsupported blockchain: {blockchain}")
+            
+    except Exception as e:
+        print(f"Error updating balance: {str(e)}")
+        success = False
+
     return success
