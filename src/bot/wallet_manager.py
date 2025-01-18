@@ -1,9 +1,8 @@
 import os
 import json
-import secrets
-from datetime import datetime  # Make sure this is the first import
+from datetime import datetime
 from eth_account import Account
-from web3 import Web3, exceptions as web3_exceptions
+from web3 import Web3
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -17,17 +16,40 @@ class WalletManager:
             self.storage_path = Path(storage_path)
             self.storage_path.mkdir(parents=True, exist_ok=True)
             
+            # Get provider URL from environment
             provider_url = os.getenv('WEB3_PROVIDER_URL')
             if not provider_url:
-                raise ValueError("WEB3_PROVIDER_URL not found in environment variables")
-                
-            self.web3 = Web3(Web3.HTTPProvider(provider_url))
-            if not self.web3.is_connected():
-                raise ConnectionError("Failed to connect to Web3 provider")
-                
+                logger.warning("WEB3_PROVIDER_URL not found, using default Infura endpoint")
+                provider_url = "https://mainnet.infura.io/v3/f13e47cbf64f4ccdb9d5474c06cdf7a0"
+            
+            # Initialize Web3 with multiple provider attempts
+            self.web3 = self._initialize_web3(provider_url)
+            
         except Exception as e:
             logger.error(f"Error initializing WalletManager: {str(e)}")
             raise
+
+    def _initialize_web3(self, provider_url: str) -> Web3:
+        """Initialize Web3 with fallback providers"""
+        providers = [
+            provider_url,
+            "https://eth-mainnet.public.blastapi.io",
+            "https://rpc.ankr.com/eth",
+            "https://cloudflare-eth.com"
+        ]
+        
+        for provider in providers:
+            try:
+                web3 = Web3(Web3.HTTPProvider(provider))
+                if web3.is_connected():
+                    logger.info(f"Successfully connected to Web3 provider: {provider}")
+                    return web3
+            except Exception as e:
+                logger.warning(f"Failed to connect to provider {provider}: {str(e)}")
+                continue
+        
+        # If we get here, no providers worked
+        raise ConnectionError("Failed to connect to any Web3 provider")
 
     def create_wallet(self, user_id: int) -> Dict[str, Any]:
         """Create a new wallet for a user"""

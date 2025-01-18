@@ -63,15 +63,20 @@ class TelegramBot:
             # Create new wallet
             wallet_result = self.wallet_manager.create_wallet(user_id)
             if wallet_result['success']:
+                # Escape special characters for MarkdownV2
+                address = wallet_result['address'].replace('-', '\\-').replace('.', '\\.')
+                welcome_text = (
+                    "🎉 Welcome\\! I've created a new wallet for you:\n\n"
+                    f"Address: `{address}`\n\n"
+                    "⚠️ Please store this address safely\\!"
+                )
                 await update.message.reply_text(
-                    f"🎉 Welcome! I've created a new wallet for you:\n\n"
-                    f"Address: `{wallet_result['address']}`\n\n"
-                    "⚠️ Please store this address safely!",
+                    welcome_text,
                     parse_mode='MarkdownV2'
                 )
             else:
                 await update.message.reply_text(
-                    "❌ Sorry, there was an error creating your wallet. Please try again later."
+                    "❌ Sorry, there was an error creating your wallet\\. Please try again later\\."
                 )
                 return
 
@@ -86,20 +91,32 @@ class TelegramBot:
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         
+        # Escape special characters for MarkdownV2
+        address = wallet['address'].replace('-', '\\-').replace('.', '\\.')
+        balance = str(wallet['balance']).replace('.', '\\.')
+        
         # Include wallet info in welcome message
         welcome_msg = (
-            f"Welcome to Memecoin Trading Bot!\n\n"
-            f"💼 Your Wallet:\n"
-            f"Address: `{wallet['address']}`\n"
-            f"Balance: {wallet['balance']} ETH\n\n"
-            f"Choose an option from the menu below:"
+            "Welcome to Memecoin Trading Bot\\!\n\n"
+            "💼 Your Wallet:\n"
+            f"Address: `{address}`\n"
+            f"Balance: {balance} ETH\n\n"
+            "Choose an option from the menu below:"
         )
         
-        await update.message.reply_text(
-            welcome_msg,
-            reply_markup=reply_markup,
-            parse_mode='MarkdownV2'
-        )
+        try:
+            await update.message.reply_text(
+                welcome_msg,
+                reply_markup=reply_markup,
+                parse_mode='MarkdownV2'
+            )
+        except Exception as e:
+            logger.error(f"Error sending welcome message: {e}")
+            # Fallback to plain text if markdown fails
+            await update.message.reply_text(
+                welcome_msg.replace('\\', ''),
+                reply_markup=reply_markup
+            )
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text
