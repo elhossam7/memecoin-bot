@@ -11,7 +11,7 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 from telegram.error import InvalidToken
-from .handlers import trade, wallet, portfolio 
+from .handlers import trade_handler as trade, wallet_handler as wallet, portfolio 
 from .menus import dashboard
 
 logger = logging.getLogger(__name__)
@@ -42,9 +42,9 @@ class TelegramBot:
     def _register_handlers(self):
         # Commands
         self.application.add_handler(CommandHandler("start", dashboard.start_command))
-        self.application.add_handler(CommandHandler("trade", trade.trade_command))
-        self.application.add_handler(CommandHandler("wallet", wallet.wallet_command))
-        self.application.add_handler(CommandHandler("portfolio", portfolio.portfolio_command))
+        self.application.add_handler(CommandHandler("trade", trade.handle_trade))
+        self.application.add_handler(CommandHandler("wallet", wallet.handle_wallet))
+        self.application.add_handler(CommandHandler("portfolio", portfolio.handle_portfolio))
         
         # Callbacks
         self.application.add_handler(CallbackQueryHandler(dashboard.menu_callback))

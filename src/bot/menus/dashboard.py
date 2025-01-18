@@ -1,31 +1,29 @@
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle the /start command - display main menu."""
     keyboard = [
         [
-            InlineKeyboardButton("💰 Trade", callback_data="menu_trade"),
-            InlineKeyboardButton("👛 Wallet", callback_data="menu_wallet")
+            InlineKeyboardButton("Trade", callback_data='trade'),
+            InlineKeyboardButton("Wallet", callback_data='wallet')
         ],
-        [
-            InlineKeyboardButton("📊 Portfolio", callback_data="menu_portfolio"),
-            InlineKeyboardButton("⚡ Quick Snipe", callback_data="menu_snipe")
-        ],
-        [
-            InlineKeyboardButton("📈 Copy Trade", callback_data="menu_copy"),
-            InlineKeyboardButton("⚙️ Settings", callback_data="menu_settings")
-        ]
+        [InlineKeyboardButton("Portfolio", callback_data='portfolio')]
     ]
-    
-    welcome_text = (
-        "🤖 *Welcome to MemeCoin Trading Bot*\n\n"
-        "Select an option to get started:"
-    )
-    
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        welcome_text, 
-        reply_markup=reply_markup,
-        parse_mode="Markdown"
+        'Welcome to MemeBot! Please select an option:',
+        reply_markup=reply_markup
     )
+
+async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle menu button callbacks."""
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == 'trade':
+        await query.message.edit_text("Trading functionality coming soon!")
+    elif query.data == 'wallet':
+        await query.message.edit_text("Wallet functionality coming soon!")
+    elif query.data == 'portfolio':
+        await query.message.edit_text("Portfolio functionality coming soon!")

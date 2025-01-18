@@ -1,3 +1,6 @@
+from telegram import Update
+from telegram.ext import CallbackContext
+
 def start(update, context):
     """Start command handler."""
     context.bot.send_message(chat_id=update.effective_chat.id, text="Welcome to the MemeCoin Trading Bot! Use /help to see available commands.")
@@ -146,3 +149,43 @@ def alerts(update, context):
 def status(update, context):
     """Status command handler."""
     context.bot.send_message(chat_id=update.effective_chat.id, text="The bot is running smoothly!")
+
+async def handle_trade_command(update: Update, context: CallbackContext):
+    try:
+        if len(context.args) != 3:
+            raise ValueError("Invalid number of arguments.\nUsage: /trade <buy/sell> <symbol> <amount>\nExample: /trade buy BTC 0.1")
+
+        action, symbol, amount = context.args
+        try:
+            amount = float(amount)
+        except ValueError:
+            raise ValueError("Amount must be a valid number")
+
+        # Validate input
+        if action.lower() not in ['buy', 'sell']:
+            raise ValueError("Invalid action. Use 'buy' or 'sell'")
+        if amount <= 0:
+            raise ValueError("Amount must be greater than 0")
+        if not symbol.isalnum():
+            raise ValueError("Invalid symbol format")
+
+        # Check available funds (example with a dummy balance)
+        available_balance = 1000  # This should come from your exchange API
+        if action.lower() == 'buy' and amount > available_balance:
+            await update.message.reply_text(f"Insufficient funds. Available balance: {available_balance}")
+            return
+
+        # Execute trade (implement actual trading logic here)
+        await update.message.reply_text(f"Trade executed: {action} {amount} {symbol}")
+
+    except ValueError as e:
+        await update.message.reply_text(str(e))
+    except Exception as e:
+        await update.message.reply_text(f"An error occurred: {str(e)}")
+
+async def handle_portfolio_command(update: Update, context: CallbackContext):
+    # Implement portfolio command logic
+    await update.message.reply_text("Portfolio command not implemented yet")
+
+# Make sure to export the functions
+__all__ = ['handle_trade_command', 'handle_portfolio_command']

@@ -1,10 +1,8 @@
 import asyncio
 import logging
-import platform
-import signal
-from bot.telegram_client import TelegramBot
-from utils.config import load_config
 import os
+from dotenv import load_dotenv
+from bot.telegram_client import TelegramBot
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,19 +11,32 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-async def shutdown(bot):
-    """Cleanup tasks tied to the service's shutdown."""
-    logger.info("Shutting down...")
-    await bot.stop()
-    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
-    [task.cancel() for task in tasks]
-    logger.info(f"Cancelling {len(tasks)} outstanding tasks")
-    if tasks:
-        await asyncio.gather(*tasks, return_exceptions=True)
-
 async def main():
-    bot = TelegramBot(os.getenv('TELEGRAM_BOT_TOKEN'))
-    await bot.application.run_polling()
+    # Load environment variables from .env file
+    load_dotenv()
+    
+    # Get the token and verify it exists
+    token = os.getenv('TELEGRAM_BOT_TOKEN')
+    if not token:
+        raise ValueError("TELEGRAM_BOT_TOKEN environment variable is not set")
+    
+    # Initialize the bot    
+    bot = TelegramBot(token)
+    
+    try:
+        # Start the bot properly
+        await bot.start()
+        
+        # Keep the bot running
+        await asyncio.Event().wait()
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Bot stopped by user")
+    finally:
+        # Ensure proper cleanup
+        await bot.stop()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
