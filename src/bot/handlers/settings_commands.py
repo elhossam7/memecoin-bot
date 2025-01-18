@@ -1,6 +1,10 @@
+import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 from ..menus.settings import update_setting, SettingsMenu
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 async def set_slippage(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
