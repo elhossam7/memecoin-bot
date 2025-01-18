@@ -75,7 +75,8 @@ class SettingsView(View):
 class Settings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.settings_data = {}  # In production, use a database
+        if not hasattr(bot, 'settings_data'):
+            bot.settings_data = {}
 
     @commands.command(name='settings')
     async def settings(self, ctx):
@@ -85,21 +86,21 @@ class Settings(commands.Cog):
             color=discord.Color.blue()
         )
         
-        view = SettingsView(self.settings_data)
+        view = SettingsView(self.bot.settings_data)
         await ctx.send(embed=embed, view=view)
 
     @commands.command(name='set_turbo_slippage')
     async def set_turbo_slippage(self, ctx, value: float):
         if 0 <= value <= 100:
-            self.settings_data['turbo_slippage'] = value
+            self.bot.settings_data['turbo_slippage'] = value
             await ctx.send(f"✅ Turbo Slippage set to {value}%")
         else:
             await ctx.send("❌ Value must be between 0 and 100")
 
     @commands.command(name='toggle_anti_mev')
     async def toggle_anti_mev(self, ctx):
-        current = self.settings_data.get('anti_mev', True)
-        self.settings_data['anti_mev'] = not current
+        current = self.bot.settings_data.get('anti_mev', True)
+        self.bot.settings_data['anti_mev'] = not current
         await ctx.send(f"✅ Anti-MEV Protection {'Enabled' if not current else 'Disabled'}")
 
     # Add other command handlers for settings modifications...

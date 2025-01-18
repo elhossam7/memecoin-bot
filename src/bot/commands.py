@@ -1,5 +1,6 @@
 from telegram import Update
 from telegram.ext import CallbackContext
+from .bot import bot  # Ensure bot is imported from the bot.py file
 
 def start(update, context):
     """Start command handler."""
