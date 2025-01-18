@@ -11,7 +11,8 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 from telegram.error import InvalidToken
-from .handlers import trade_handler as trade, wallet_handler as wallet, portfolio 
+from .handlers import trade_handler as trade, wallet_handler as wallet, portfolio
+from .menus.dashboard import menu_callback  # Add this import
 
 logger = logging.getLogger(__name__)
 
@@ -62,14 +63,15 @@ class TelegramBot:
         return bool(re.match(r'^\d+:[A-Za-z0-9_-]+$', token))
 
     def _register_handlers(self):
-        from .menus.dashboard import start_command, menu_callback
+        from .menus.main_menu import show_main_menu, handle_main_menu_callback
         from .menus.settings import show_settings, handle_settings_page
         from .handlers.settings_commands import (
             set_slippage, toggle_mev, set_tip, handle_deposit
         )
         
         # Commands
-        self.application.add_handler(CommandHandler("start", start_command))
+        self.application.add_handler(CommandHandler("start", show_main_menu))  # Changed to main menu
+        self.application.add_handler(CommandHandler("menu", show_main_menu))
         self.application.add_handler(CommandHandler("settings", show_settings))
         self.application.add_handler(CommandHandler("set_slippage", set_slippage))
         self.application.add_handler(CommandHandler("toggle_mev", toggle_mev))
@@ -80,7 +82,8 @@ class TelegramBot:
         self.application.add_handler(CommandHandler("deposit", handle_deposit))
         
         # Callbacks
-        self.application.add_handler(CallbackQueryHandler(menu_callback))
+        self.application.add_handler(CallbackQueryHandler(handle_main_menu_callback))
+        self.application.add_handler(CallbackQueryHandler(menu_callback))  # This should now work
         self.application.add_handler(
             CallbackQueryHandler(
                 handle_settings_page, 
