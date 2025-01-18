@@ -12,7 +12,6 @@ from telegram.ext import (
 )
 from telegram.error import InvalidToken
 from .handlers import trade_handler as trade, wallet_handler as wallet, portfolio 
-from .menus import dashboard
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +39,22 @@ class TelegramBot:
         return bool(re.match(r'^\d+:[A-Za-z0-9_-]+$', token))
 
     def _register_handlers(self):
+        from .menus.dashboard import start_command, menu_callback
+        from .menus.settings import show_settings
+        from .handlers.settings_commands import set_slippage, toggle_mev, set_tip
+        
         # Commands
-        self.application.add_handler(CommandHandler("start", dashboard.start_command))
+        self.application.add_handler(CommandHandler("start", start_command))
+        self.application.add_handler(CommandHandler("settings", show_settings))
+        self.application.add_handler(CommandHandler("set_slippage", set_slippage))
+        self.application.add_handler(CommandHandler("toggle_mev", toggle_mev))
+        self.application.add_handler(CommandHandler("set_tip", set_tip))
         self.application.add_handler(CommandHandler("trade", trade.handle_trade))
         self.application.add_handler(CommandHandler("wallet", wallet.handle_wallet))
         self.application.add_handler(CommandHandler("portfolio", portfolio.handle_portfolio))
         
         # Callbacks
-        self.application.add_handler(CallbackQueryHandler(dashboard.menu_callback))
+        self.application.add_handler(CallbackQueryHandler(menu_callback))
 
     async def start(self):
         """Start the bot asynchronously."""
