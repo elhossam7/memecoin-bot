@@ -40,7 +40,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'assets': "💎 Assets functionality coming soon!",
         'wallet': "👛 Wallet functionality coming soon!",
         'new_lp': "🔄 New LP functionality coming soon!",
-        'settings': "⚙️ Settings functionality coming soon!",
         'language': "🌐 Language functionality coming soon!"
     }
     
