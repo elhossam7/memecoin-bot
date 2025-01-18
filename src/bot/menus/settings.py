@@ -182,3 +182,10 @@ async def handle_settings_page(update: Update, context: ContextTypes.DEFAULT_TYP
         return
 
     await query.edit_message_text(message, reply_markup=menu.markup)
+
+from telegram import Update
+from telegram.ext import ContextTypes
+
+class Settings:
+    async def handle_settings(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text("Settings menu - Coming soon...")

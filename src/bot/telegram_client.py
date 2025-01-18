@@ -1,18 +1,15 @@
 import asyncio
 import re
 import logging
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import (
     Application,
     CommandHandler,
     ContextTypes,
     MessageHandler,
-    filters,
-    CallbackQueryHandler
+    filters
 )
 from telegram.error import InvalidToken
-from .handlers import trade_handler as trade, wallet_handler as wallet, portfolio
-from .menus.dashboard import menu_callback  # Add this import
 
 logger = logging.getLogger(__name__)
 
@@ -28,91 +25,81 @@ class TelegramBot:
             raise InvalidToken("Invalid Telegram bot token format")
         
         self.token = token
-        self.application = Application.builder().token(token).build()
-        
-        # Initialize settings data
-        self.application.bot_data['settings_data'] = {
+        self.app = Application.builder().token(token).build()
+        self._setup_handlers()
+        self.settings_data = {
             'wallet_balance': 0.0,
             'turbo_slippage': 1.0,
             'anti_mev': True,
-            'buy_tip': 0.1,
-            'sell_tip': 0.1,
-            'auto_buy': True,
-            'auto_sell': True,
-            'custom_buy': 0.0,
-            'custom_sell': 0.0,
-            'show_tokens': True,
             'gas_limit': 500000,
             'priority_gas': False,
-            'max_gas': 100,
-            'auto_approve': False,
-            'max_buy_tax': 10,
-            'sell_multiplier': 1.5,
-            'default_buy_amount': 0.1,
-            'auto_sells': True
+            'auto_buy': True,
+            'auto_sell': True
         }
-        
-        self._register_handlers()
 
     @staticmethod
     def _is_valid_token(token: str) -> bool:
         """Validate Telegram bot token format."""
         if not isinstance(token, str):
             return False
-        # Simpler regex that just checks for number:string format
-        return bool(re.match(r'^\d+:[A-Za-z0-9_-]+$', token))
+        # More lenient regex that matches the Telegram bot token format
+        return bool(re.match(r'^\d+:[A-Za-z0-9_-]+$', token.strip()))
 
-    def _register_handlers(self):
-        from .menus.main_menu import show_main_menu, handle_main_menu_callback
-        from .menus.settings import show_settings, handle_settings_page
-        from .handlers.settings_commands import (
-            set_slippage, toggle_mev, set_tip, handle_deposit
-        )
-        
-        # Commands
-        self.application.add_handler(CommandHandler("start", show_main_menu))  # Changed to main menu
-        self.application.add_handler(CommandHandler("menu", show_main_menu))
-        self.application.add_handler(CommandHandler("settings", show_settings))
-        self.application.add_handler(CommandHandler("set_slippage", set_slippage))
-        self.application.add_handler(CommandHandler("toggle_mev", toggle_mev))
-        self.application.add_handler(CommandHandler("set_tip", set_tip))
-        self.application.add_handler(CommandHandler("trade", trade.handle_trade))
-        self.application.add_handler(CommandHandler("wallet", wallet.handle_wallet))
-        self.application.add_handler(CommandHandler("portfolio", portfolio.handle_portfolio))
-        self.application.add_handler(CommandHandler("deposit", handle_deposit))
-        
-        # Callbacks
-        self.application.add_handler(CallbackQueryHandler(handle_main_menu_callback))
-        self.application.add_handler(CallbackQueryHandler(menu_callback))  # This should now work
-        self.application.add_handler(
-            CallbackQueryHandler(
-                handle_settings_page, 
-                pattern='^settings_page_[0-9]+$'
-            )
+    def _setup_handlers(self):
+        # Add command handlers
+        self.app.add_handler(CommandHandler("start", self.start_command))
+        # Add message handlers
+        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
+
+    async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        keyboard = [
+            ['🛒 Buy', '💰 Sell', '📊 Positions'],
+            ['📈 Limit Orders', '⏱️ DCA Orders'],
+            ['👥 Copy Trade', '🎯 Sniper', '⚔️ Trenches'],
+            ['👀 Watchlist', '💳 Withdraw'],
+            ['⚙️ Settings', '❓ Help', '🔄 Refresh'],
+            ['🤝 Referrals', '📱 Social']
+        ]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        await update.message.reply_text(
+            "Welcome to Memecoin Trading Bot!\nChoose an option from the menu below:",
+            reply_markup=reply_markup
         )
 
-    async def start(self):
-        """Start the bot asynchronously."""
-        try:
-            await self.application.initialize()
-            await self.application.start()
-            # Use simple polling without signal handlers
-            await self.application.updater.start_polling(
-                allowed_updates=Update.ALL_TYPES,
-                drop_pending_updates=True
-            )
-        except Exception as e:
-            logger.error(f"Error in bot startup: {e}")
-            await self.stop()
-            raise
+    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        text = update.message.text
 
-    async def stop(self):
-        """Stop the bot asynchronously."""
-        try:
-            if hasattr(self, 'application') and self.application.running:
-                await self.application.updater.stop()
-                await self.application.stop()
-                await self.application.shutdown()
-        except Exception as e:
-            logger.error(f"Error stopping bot: {e}")
-            raise
+        responses = {
+            '🛒 Buy': "Buy Order Menu\nEnter token address or select from trending",
+            '💰 Sell': "Sell Order Menu\nSelect token from your portfolio",
+            '📊 Positions': "Current Active Positions:\nNo open positions",
+            '📈 Limit Orders': "Limit Orders:\nNo active limit orders",
+            '⏱️ DCA Orders': "DCA (Dollar Cost Average) Orders:\nNo active DCA orders",
+            '👥 Copy Trade': "Copy Trading Menu\nSelect traders to copy",
+            '🎯 Sniper': "Token Sniper Settings\nSet up your snipe parameters",
+            '⚔️ Trenches': "Trenches Trading Mode\nSet up your trading trenches",
+            '👀 Watchlist': "Your Watchlist\nNo tokens added",
+            '💳 Withdraw': f"Wallet Balance: ${self.settings_data['wallet_balance']:,.2f}\nEnter amount to withdraw",
+            '⚙️ Settings': self._get_settings_text(),
+            '❓ Help': "Trading Bot Help Menu\n/buy - Place buy order\n/sell - Place sell order\n/limits - Set limit orders",
+            '🔄 Refresh': "Refreshing market data...\nDone ✅",
+            '🤝 Referrals': "Your Referral Link: t.me/yourbot?start=ref123\nReferral Rewards: $0.00",
+            '📱 Social': "Join our community:\nTelegram: t.me/tradingbot\nTwitter: @tradingbot"
+        }
+
+        response = responses.get(text, 'Please use the menu options.')
+        await update.message.reply_text(response)
+
+    def _get_settings_text(self):
+        return (
+            "⚙️ Current Settings:\n"
+            f"Anti-MEV: {'✅' if self.settings_data['anti_mev'] else '❌'}\n"
+            f"Auto Buy: {'✅' if self.settings_data['auto_buy'] else '❌'}\n"
+            f"Auto Sell: {'✅' if self.settings_data['auto_sell'] else '❌'}\n"
+            f"Gas Limit: {self.settings_data['gas_limit']}\n"
+            f"Slippage: {self.settings_data['turbo_slippage']}%"
+        )
+
+    def run(self):
+        print("Bot is starting...")
+        self.app.run_polling()

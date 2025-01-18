@@ -1,42 +1,34 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
 
 class DashboardMenu:
     def __init__(self):
         self.keyboard = [
-            [InlineKeyboardButton("🔄 Trade", callback_data='trade'),
-             InlineKeyboardButton("👛 Wallet", callback_data='wallet')],
-            [InlineKeyboardButton("📊 Portfolio", callback_data='portfolio'),
-             InlineKeyboardButton("⚙️ Settings", callback_data='settings')]
+            ['📈 Price', '💰 Buy/Sell'],
+            ['📊 Chart', '📢 News'],
+            ['ℹ️ Info', '⚙️ Settings']
         ]
-        self.markup = InlineKeyboardMarkup(self.keyboard)
+
+    async def display(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        reply_markup = ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
+        await update.message.reply_text(
+            "Welcome to Memecoin Bot! Choose an option:",
+            reply_markup=reply_markup
+        )
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    menu = DashboardMenu()
-    await update.message.reply_text(
-        "Welcome to MemeCoin Trading Bot! 🚀\nPlease select an option:",
-        reply_markup=menu.markup
-    )
+    dashboard = DashboardMenu()
+    await dashboard.display(update, context)
 
 async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data == 'trade':
-        await query.message.edit_text("Trading menu coming soon!")
-    elif query.data == 'wallet':
-        await query.message.edit_text("Wallet info coming soon!")
-    elif query.data == 'portfolio':
-        await query.message.edit_text("Portfolio details coming soon!")
-    elif query.data == 'settings':
-        from .settings import show_settings
-        await show_settings(update, context)
-    elif query.data.startswith('settings_'):
-        from .settings import handle_settings_callback
-        await handle_settings_callback(update, context)
-    elif query.data == 'back_to_main':
-        menu = DashboardMenu()
-        await query.message.edit_text(
-            "Welcome to MemeCoin Trading Bot! 🚀\nPlease select an option:",
-            reply_markup=menu.markup
-        )
+    text = update.message.text
+    responses = {
+        '📈 Price': 'Current price information...',
+        '💰 Buy/Sell': 'Trading information...',
+        '📊 Chart': 'Chart information...',
+        '📢 News': 'Latest news...',
+        'ℹ️ Info': 'Bot information...',
+        '⚙️ Settings': 'Settings options...'
+    }
+    response = responses.get(text, 'Please use the menu options.')
+    await update.message.reply_text(response)
