@@ -11,6 +11,8 @@ from telegram.ext import (
 )
 from telegram.error import InvalidToken
 
+from .wallet_manager import WalletManager
+
 logger = logging.getLogger(__name__)
 
 class TelegramBot:
@@ -36,6 +38,7 @@ class TelegramBot:
             'auto_buy': True,
             'auto_sell': True
         }
+        self.wallet_manager = WalletManager()
 
     @staticmethod
     def _is_valid_token(token: str) -> bool:
@@ -52,6 +55,27 @@ class TelegramBot:
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
 
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = update.effective_user.id
+        
+        # Check if user has a wallet
+        wallet = self.wallet_manager.get_wallet(user_id)
+        if not wallet:
+            # Create new wallet
+            wallet_result = self.wallet_manager.create_wallet(user_id)
+            if wallet_result['success']:
+                await update.message.reply_text(
+                    f"🎉 Welcome! I've created a new wallet for you:\n\n"
+                    f"Address: `{wallet_result['address']}`\n\n"
+                    "⚠️ Please store this address safely!",
+                    parse_mode='MarkdownV2'
+                )
+            else:
+                await update.message.reply_text(
+                    "❌ Sorry, there was an error creating your wallet. Please try again later."
+                )
+                return
+
+        # Show main menu
         keyboard = [
             ['🛒 Buy', '💰 Sell', '📊 Positions'],
             ['📈 Limit Orders', '⏱️ DCA Orders'],
@@ -61,9 +85,20 @@ class TelegramBot:
             ['🤝 Referrals', '📱 Social']
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        
+        # Include wallet info in welcome message
+        welcome_msg = (
+            f"Welcome to Memecoin Trading Bot!\n\n"
+            f"💼 Your Wallet:\n"
+            f"Address: `{wallet['address']}`\n"
+            f"Balance: {wallet['balance']} ETH\n\n"
+            f"Choose an option from the menu below:"
+        )
+        
         await update.message.reply_text(
-            "Welcome to Memecoin Trading Bot!\nChoose an option from the menu below:",
-            reply_markup=reply_markup
+            welcome_msg,
+            reply_markup=reply_markup,
+            parse_mode='MarkdownV2'
         )
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
