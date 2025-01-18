@@ -187,5 +187,9 @@ async def handle_portfolio_command(update: Update, context: CallbackContext):
     # Implement portfolio command logic
     await update.message.reply_text("Portfolio command not implemented yet")
 
+@bot.command(name='settings')
+async def settings(ctx):
+    await ctx.send("⚙️ Settings functionality coming soon!")
+
 # Make sure to export the functions
 __all__ = ['handle_trade_command', 'handle_portfolio_command']
