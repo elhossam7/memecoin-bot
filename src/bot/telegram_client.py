@@ -28,6 +28,29 @@ class TelegramBot:
         
         self.token = token
         self.application = Application.builder().token(token).build()
+        
+        # Initialize settings data
+        self.application.bot_data['settings_data'] = {
+            'wallet_balance': 0.0,
+            'turbo_slippage': 1.0,
+            'anti_mev': True,
+            'buy_tip': 0.1,
+            'sell_tip': 0.1,
+            'auto_buy': True,
+            'auto_sell': True,
+            'custom_buy': 0.0,
+            'custom_sell': 0.0,
+            'show_tokens': True,
+            'gas_limit': 500000,
+            'priority_gas': False,
+            'max_gas': 100,
+            'auto_approve': False,
+            'max_buy_tax': 10,
+            'sell_multiplier': 1.5,
+            'default_buy_amount': 0.1,
+            'auto_sells': True
+        }
+        
         self._register_handlers()
 
     @staticmethod
@@ -40,8 +63,10 @@ class TelegramBot:
 
     def _register_handlers(self):
         from .menus.dashboard import start_command, menu_callback
-        from .menus.settings import show_settings
-        from .handlers.settings_commands import set_slippage, toggle_mev, set_tip
+        from .menus.settings import show_settings, handle_settings_page
+        from .handlers.settings_commands import (
+            set_slippage, toggle_mev, set_tip, handle_deposit
+        )
         
         # Commands
         self.application.add_handler(CommandHandler("start", start_command))
@@ -52,9 +77,16 @@ class TelegramBot:
         self.application.add_handler(CommandHandler("trade", trade.handle_trade))
         self.application.add_handler(CommandHandler("wallet", wallet.handle_wallet))
         self.application.add_handler(CommandHandler("portfolio", portfolio.handle_portfolio))
+        self.application.add_handler(CommandHandler("deposit", handle_deposit))
         
         # Callbacks
         self.application.add_handler(CallbackQueryHandler(menu_callback))
+        self.application.add_handler(
+            CallbackQueryHandler(
+                handle_settings_page, 
+                pattern='^settings_page_[0-9]+$'
+            )
+        )
 
     async def start(self):
         """Start the bot asynchronously."""
