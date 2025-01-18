@@ -1,13 +1,5 @@
 # Empty init file to make the bot directory a package
 
-# ...existing code...
+from .telegram_client import TelegramBot
 
-from .settings import Settings
-
-# ...existing code...
-
-def setup(bot):
-    # ...existing code...
-    bot.add_cog(Settings(bot))
-
-# ...existing code...
+__all__ = ['TelegramBot']
