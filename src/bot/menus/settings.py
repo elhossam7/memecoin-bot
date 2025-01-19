@@ -1,6 +1,10 @@
+import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 from typing import Dict, Any
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 class SettingsMenu:
     def __init__(self, settings_data: Dict[str, Any] = None):
@@ -25,7 +29,7 @@ class SettingsMenu:
             'auto_sells': True
         }
         
-        # Create a multi-page menu system
+        # Create menu system without navigation buttons
         self.keyboard = [
             # Page 1: Basic Settings
             [InlineKeyboardButton("💰 Wallet ($%.2f)" % self.settings_data['wallet_balance'], 
@@ -34,7 +38,7 @@ class SettingsMenu:
                                 callback_data='settings_turbo')],
             [InlineKeyboardButton("🛡️ Anti-MEV: %s" % ('✅' if self.settings_data['anti_mev'] else '❌'), 
                                 callback_data='settings_mev')],
-            # Page 2: Trading Settings
+            # Trading Settings
             [InlineKeyboardButton("💎 Buy Tip: %.1f%%" % self.settings_data['buy_tip'], 
                                 callback_data='settings_buy_tip'),
              InlineKeyboardButton("💎 Sell Tip: %.1f%%" % self.settings_data['sell_tip'], 
@@ -43,7 +47,7 @@ class SettingsMenu:
                                 callback_data='settings_gas'),
              InlineKeyboardButton("🔥 Priority: %s" % ('✅' if self.settings_data['priority_gas'] else '❌'), 
                                 callback_data='settings_priority')],
-            # Page 3: Auto Trading
+            # Auto Trading
             [InlineKeyboardButton("🤖 Auto Buy: %s" % ('✅' if self.settings_data['auto_buy'] else '❌'), 
                                 callback_data='settings_auto_buy'),
              InlineKeyboardButton("🤖 Auto Sell: %s" % ('✅' if self.settings_data['auto_sell'] else '❌'), 
@@ -51,59 +55,95 @@ class SettingsMenu:
             [InlineKeyboardButton("📈 Buy Amount: %.3f" % self.settings_data['default_buy_amount'], 
                                 callback_data='settings_buy_amount'),
              InlineKeyboardButton("📉 Sell Multi: %.1fx" % self.settings_data['sell_multiplier'], 
-                                callback_data='settings_sell_multi')],
-            # Navigation
-            [InlineKeyboardButton("◀️ Back", callback_data='back_to_main'),
-             InlineKeyboardButton("More ▶️", callback_data='settings_page_2')]
+                                callback_data='settings_sell_multi')]
         ]
         self.markup = InlineKeyboardMarkup(self.keyboard)
 
 async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if 'settings_data' not in context.bot_data:
-        context.bot_data['settings_data'] = {
-            'wallet_balance': 0.0,
-            'turbo_slippage': 1.0,
-            'anti_mev': True,
-            'buy_tip': 0.1,
-            'sell_tip': 0.1,
-            'auto_buy': True,
-            'auto_sell': True,
-            'custom_buy': 0.0,
-            'custom_sell': 0.0,
-            'show_tokens': True,
-            'gas_limit': 500000,
-            'priority_gas': False,
-            'max_gas': 100,
-            'auto_approve': False,
-            'max_buy_tax': 10,
-            'sell_multiplier': 1.5,
-            'default_buy_amount': 0.1,
-            'auto_sells': True
-        }
-    
-    menu = SettingsMenu(context.bot_data['settings_data'])
-    message = (
-        "⚙️ Trading Settings\n\n"
-        f"💰 Balance: ${menu.settings_data['wallet_balance']:,.2f}\n"
-        f"🚀 Turbo Slippage: {menu.settings_data['turbo_slippage']}%\n"
-        f"🛡️ Anti-MEV: {'Enabled' if menu.settings_data['anti_mev'] else 'Disabled'}\n"
-        f"⛽ Gas Limit: {menu.settings_data['gas_limit']:,}\n"
-        f"🔥 Priority Gas: {'Enabled' if menu.settings_data['priority_gas'] else 'Disabled'}\n"
-        f"💎 Tips: Buy {menu.settings_data['buy_tip']}% / Sell {menu.settings_data['sell_tip']}%\n"
-        f"🤖 Auto: Buy {'✅' if menu.settings_data['auto_buy'] else '❌'} / "
-        f"Sell {'✅' if menu.settings_data['auto_sell'] else '❌'}\n\n"
-        "Click buttons below to modify settings:"
-    )
-    
-    if update.callback_query:
-        await update.callback_query.edit_message_text(message, reply_markup=menu.markup)
-    else:
-        await update.message.reply_text(message, reply_markup=menu.markup)
+    """Display settings menu"""
+    try:
+        if 'settings_data' not in context.bot_data:
+            context.bot_data['settings_data'] = {
+                'wallet_balance': 0.0,
+                'turbo_slippage': 1.0,
+                'anti_mev': True,
+                'buy_tip': 0.1,
+                'sell_tip': 0.1,
+                'auto_buy': True,
+                'auto_sell': True,
+                'custom_buy': 0.0,
+                'custom_sell': 0.0,
+                'show_tokens': True,
+                'gas_limit': 500000,
+                'priority_gas': False,
+                'max_gas': 100,
+                'auto_approve': False,
+                'max_buy_tax': 10,
+                'sell_multiplier': 1.5,
+                'default_buy_amount': 0.1,
+                'auto_sells': True
+            }
+        
+        menu = SettingsMenu(context.bot_data['settings_data'])
+        
+        # Format and escape values
+        balance = f"{menu.settings_data['wallet_balance']:,.2f}".replace('.', '\\.')
+        slippage = str(menu.settings_data['turbo_slippage']).replace('.', '\\.')
+        gas_limit = f"{menu.settings_data['gas_limit']:,}".replace(',', '')
+        buy_tip = str(menu.settings_data['buy_tip']).replace('.', '\\.')
+        sell_tip = str(menu.settings_data['sell_tip']).replace('.', '\\.')
+        
+        message = (
+            "⚙️ *Trading Settings*\n\n"
+            f"💰 Balance: \\${balance}\n"
+            f"🚀 Turbo Slippage: {slippage}\\%\n"
+            f"🛡️ Anti\\-MEV: {'Enabled' if menu.settings_data['anti_mev'] else 'Disabled'}\n"
+            f"⛽ Gas Limit: {gas_limit}\n"
+            f"🔥 Priority Gas: {'Enabled' if menu.settings_data['priority_gas'] else 'Disabled'}\n"
+            f"💎 Tips: Buy {buy_tip}\\% / Sell {sell_tip}\\%\n"
+            f"🤖 Auto: Buy {'✅' if menu.settings_data['auto_buy'] else '❌'} / "
+            f"Sell {'✅' if menu.settings_data['auto_sell'] else '❌'}\n\n"
+            "Click buttons below to modify settings\\:"
+        )
+        
+        markup = menu.markup
+        
+        if update.callback_query:
+            await update.callback_query.edit_message_text(
+                text=message,
+                reply_markup=markup,
+                parse_mode='MarkdownV2'
+            )
+        else:
+            await update.message.reply_text(
+                text=message,
+                reply_markup=markup,
+                parse_mode='MarkdownV2'
+            )
+    except Exception as e:
+        logger.error(f"Error showing settings: {e}")
+        # Fallback to plain text if markdown fails
+        plain_message = message.replace('\\', '').replace('*', '')
+        if update.callback_query:
+            await update.callback_query.edit_message_text(
+                text=plain_message,
+                reply_markup=markup
+            )
+        else:
+            await update.message.reply_text(
+                text=plain_message,
+                reply_markup=markup
+            )
 
 async def handle_settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
+    if query.data == 'back_to_main':
+        from .main_menu import show_main_menu
+        await show_main_menu(update, context)
+        return
+        
     if 'settings_data' not in context.bot_data:
         context.bot_data['settings_data'] = {}
     

@@ -111,6 +111,11 @@ async def handle_main_menu_callback(update: Update, context: ContextTypes.DEFAUL
     query = update.callback_query
     await query.answer()
     
+    if query.data == 'settings':
+        from .settings import show_settings
+        await show_settings(update, context)
+        return
+    
     action_messages = {
         'buy': "🛒 Buy cryptocurrencies at market or limit price",
         'sell': "💰 Sell your crypto holdings",
@@ -131,9 +136,6 @@ async def handle_main_menu_callback(update: Update, context: ContextTypes.DEFAUL
     if query.data in action_messages:
         if query.data == 'refresh':
             await show_main_menu(update, context)
-        elif query.data == 'settings':
-            from .settings import show_settings
-            await show_settings(update, context)
         else:
             await query.edit_message_text(
                 f"{action_messages[query.data]}\n\nFeature coming soon!",

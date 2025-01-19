@@ -7,11 +7,13 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     MessageHandler,
-    filters
+    filters,
+    CallbackQueryHandler
 )
 from telegram.error import InvalidToken
 
 from .wallet_manager import WalletManager
+from .menus.settings import SettingsMenu, show_settings, handle_settings_callback
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +53,9 @@ class TelegramBot:
     def _setup_handlers(self):
         # Add command handlers
         self.app.add_handler(CommandHandler("start", self.start_command))
-        # Add message handlers
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
+        # Add callback query handler for settings
+        self.app.add_handler(CallbackQueryHandler(handle_settings_callback))
 
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
@@ -120,6 +123,10 @@ class TelegramBot:
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text
+
+        if text == '⚙️ Settings':
+            await show_settings(update, context)
+            return
 
         responses = {
             '🛒 Buy': "Buy Order Menu\nEnter token address or select from trending",
