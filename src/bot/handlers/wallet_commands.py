@@ -1,7 +1,12 @@
+import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from ...core.wallet.generator import WalletGenerator
 from ...core.wallet.storage import WalletStorage
+from ...blockchain.solana.web3_client import get_account_balance
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 wallet_storage = WalletStorage()
 
@@ -107,5 +112,82 @@ async def handle_wallet_creation(update: Update, context: ContextTypes.DEFAULT_T
             "Please try again or contact support."
         )
 
+async def create_solana_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Create a Solana wallet for the user"""
+    user_id = update.effective_user.id
+    try:
+        # Generate wallet using the wallet generator
+        wallet_data = WalletGenerator.create_wallet('solana')
+        
+        if not wallet_data['success']:
+            await update.message.reply_text(
+                "❌ Failed to create wallet. Please try again later."
+            )
+            return
+            
+        # Format the wallet address for display
+        address = wallet_data['solana']['address']
+        escaped_address = address.replace('-', '\\-').replace('.', '\\.')
+        
+        # Get initial balance
+        balance = await get_account_balance(address)
+        
+        # Create message with wallet details and funding instructions
+        message = (
+            "🌟 Your Solana wallet has been created\\!\n\n"
+            f"Wallet Address: `{escaped_address}`\n"
+            f"Current Balance: {balance} SOL\n\n"
+            "⚠️ *Important Instructions*:\n"
+            "1\\. Send SOL tokens to this address to start trading\n"
+            "2\\. Minimum recommended balance: 0\\.1 SOL\n"
+            "3\\. Only send SOL from exchanges or wallets you trust\n\n"
+            "Type /balance to check your wallet balance"
+        )
+        
+        await update.message.reply_text(
+            message,
+            parse_mode='MarkdownV2'
+        )
+
+    except Exception as e:
+        await update.message.reply_text(
+            "❌ Error occurred while creating wallet. Please try again later."
+        )
+        logger.error(f"Wallet creation error for user {user_id}: {str(e)}")
+
+async def check_wallet_balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Check the user's Solana wallet balance"""
+    user_id = update.effective_user.id
+    try:
+        wallet = wallet_storage.get_wallet(user_id)
+        if not wallet:
+            await update.message.reply_text(
+                "❌ No wallet found. Use /createwallet to create one first."
+            )
+            return
+            
+        address = wallet['solana']['address']
+        balance = await get_account_balance(address)
+        
+        if balance < 0.1:
+            message = (
+                f"Current Balance: {balance} SOL\n\n"
+                "⚠️ Your balance is below the recommended 0.1 SOL minimum.\n"
+                "Please fund your wallet to start trading."
+            )
+        else:
+            message = (
+                f"Current Balance: {balance} SOL\n"
+                "✅ Your wallet is funded and ready for trading!"
+            )
+            
+        await update.message.reply_text(message)
+        
+    except Exception as e:
+        await update.message.reply_text(
+            "❌ Error checking balance. Please try again later."
+        )
+        logger.error(f"Balance check error for user {user_id}: {str(e)}")
+
 # Export the handlers
-__all__ = ['handle_blockchain_selection', 'handle_wallet_creation']
+__all__ = ['handle_blockchain_selection', 'handle_wallet_creation', 'create_solana_wallet', 'check_wallet_balance']

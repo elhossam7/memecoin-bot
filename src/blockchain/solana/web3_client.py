@@ -1,3 +1,8 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 def connect_to_solana():
     """
     Connects to the Solana blockchain using the Solana Web3 library.
@@ -5,8 +10,8 @@ def connect_to_solana():
     """
     from solana.rpc.api import Client
 
-    # Replace with your Solana cluster URL
-    solana_cluster_url = "https://api.mainnet-beta.solana.com"
+    # Use QuickNode endpoint from environment variables
+    solana_cluster_url = os.getenv('SOLANA_RPC_URL', "https://api.mainnet-beta.solana.com")
     client = Client(solana_cluster_url)
     return client
 

@@ -14,6 +14,7 @@ from telegram.error import InvalidToken
 
 from .wallet_manager import WalletManager
 from .menus.settings import SettingsMenu, show_settings, handle_settings_callback
+from .handlers.wallet_commands import create_solana_wallet, check_wallet_balance
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,8 @@ class TelegramBot:
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
         # Add callback query handler for settings
         self.app.add_handler(CallbackQueryHandler(handle_settings_callback))
+        self.app.add_handler(CommandHandler("createwallet", create_solana_wallet))
+        self.app.add_handler(CommandHandler("balance", check_wallet_balance))
 
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
