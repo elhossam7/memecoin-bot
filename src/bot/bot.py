@@ -1,30 +1,47 @@
 import discord 
 from discord.ext import commands
+import logging
+import asyncio
 
-class TradeBot(commands.Bot):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.settings_data = {}  # Initialize settings data storage
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    async def setup_hook(self):
-        # Load extensions/cogs
-        await self.load_extension('bot.settings')
-        print('Bot is ready!')
+# Initialize bot with command prefix
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix='!', intents=intents)
 
-    async def on_ready(self):
-        print(f'Logged in as {self.user} (ID: {self.user.id})')
-        print('------')
+@bot.event
+async def on_ready():
+    """Event handler for when bot is ready"""
+    logger.info(f'Logged in as {bot.user.name} ({bot.user.id})')
+    await bot.change_presence(activity=discord.Game(name="!help for commands"))
+
+@bot.event
+async def on_command_error(ctx, error):
+    """Global error handler"""
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.send("Command not found. Use !help to see available commands.")
+    elif isinstance(error, commands.MissingPermissions):
+        await ctx.send("You don't have permission to use this command.")
+    else:
+        logger.error(f"Error occurred: {str(error)}")
+        await ctx.send("An error occurred while processing your command.")
+
+@bot.command(name='ping')
+async def ping(ctx):
+    """Simple command to check if bot is responsive"""
+    await ctx.send(f'Pong! Latency: {round(bot.latency * 1000)}ms')
 
 def run_bot(token):
-    # Create bot instance with default intents
-    intents = discord.Intents.default()
-    intents.message_content = True
-    bot = TradeBot(command_prefix='!', intents=intents)
-    
-    # Run the bot
-    bot.run(token)
+    """Run the bot with the provided token"""
+    try:
+        bot.run(token)
+    except Exception as e:
+        logger.error(f"Failed to start bot: {str(e)}")
 
-if __name__ == '__main__':
-    # Replace 'YOUR_TOKEN' with your actual bot token
-    TOKEN = '7798784053:AAHq4Rh_daQrFqzl9eNg5ZMDcBJQsXNHAfI'
+if __name__ == "__main__":
+    # Replace with your actual token
+    TOKEN = "YOUR_BOT_TOKEN_HERE"
     run_bot(TOKEN)

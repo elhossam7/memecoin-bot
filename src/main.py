@@ -1,7 +1,11 @@
 import os
 import sys
 from dotenv import load_dotenv
-from bot.telegram_client import TelegramBot
+
+# Add the src directory to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.bot.telegram_client import TelegramBot
 
 def main():
     # Load environment variables
@@ -12,7 +16,7 @@ def main():
         sys.exit(1)
 
     load_dotenv(env_path)
-    token = os.getenv('BOT_TOKEN')
+    token = os.getenv('TELEGRAM_BOT_TOKEN', '')
     
     if not token:
         print("Error: BOT_TOKEN not found in .env file!")
